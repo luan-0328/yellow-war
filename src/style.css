@@ -1,0 +1,60 @@
+:root {
+  color-scheme: dark;
+  background: #1b2327;
+  font-family: "Microsoft YaHei", sans-serif;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+body {
+  background: radial-gradient(ellipse at center, #435052, #182025 85%);
+}
+#game {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+canvas {
+  display: block;
+  box-shadow: 0 12px 80px #0007;
+}
+canvas:focus-visible {
+  outline: 2px solid #f0c457;
+  outline-offset: -2px;
+}
+#load-status {
+  position: absolute;
+  top: 50%;
+  width: 100%;
+  text-align: center;
+  color: #ffe1a1;
+  pointer-events: none;
+}
+#load-status[hidden] {
+  display: none;
+}
+#rotate-hint {
+  display: none;
+}
+@media (orientation: portrait) and (max-width: 767px) {
+  #rotate-hint {
+    display: block;
+    position: fixed;
+    left: 20px;
+    right: 20px;
+    bottom: 15%;
+    padding: 20px;
+    border: 1px solid #a18f58;
+    border-radius: 8px;
+    background: #252b2cee;
+    color: #ffe4a1;
+    text-align: center;
+  }
+}

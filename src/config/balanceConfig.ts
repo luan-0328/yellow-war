@@ -1,0 +1,17 @@
+export const BALANCE = {
+  baseHp: 1800,
+  initialGold: 400,
+  populationCap: 30,
+  mineDuration: 2.5,
+  mineYield: 55,
+  aiInterval: 4,
+  spawnDuration: 0.35,
+  deathDuration: 0.6,
+  separation: 27,
+  baseX: { player: 85, enemy: 1195 },
+  homeX: { player: 140, enemy: 1140 },
+  mineX: { player: 250, enemy: 1030 },
+  rallyX: { player: 330, enemy: 950 },
+  defenseX: { player: 380, enemy: 900 },
+  groundY: 590,
+} as const;

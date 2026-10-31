@@ -1,0 +1,38 @@
+{
+  "miner": {
+    "x": 1,
+    "y": 14,
+    "width": 231,
+    "height": 350
+  },
+  "swordsman": {
+    "x": 0,
+    "y": 8,
+    "width": 226,
+    "height": 336
+  },
+  "archer": {
+    "x": 0,
+    "y": 8,
+    "width": 230,
+    "height": 336
+  },
+  "spearman": {
+    "x": 4,
+    "y": 13,
+    "width": 229,
+    "height": 411
+  },
+  "mage": {
+    "x": 0,
+    "y": 10,
+    "width": 245,
+    "height": 404
+  },
+  "giant": {
+    "x": 0,
+    "y": 19,
+    "width": 365,
+    "height": 606
+  }
+}
