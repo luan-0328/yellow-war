@@ -36,7 +36,20 @@
 - Windows 上运行中的 Vite 占用原生绑定，首次 `npm ci` 触发文件锁失败；停止服务后重新 `npm ci` 成功，10 项测试和生产构建通过，开发服务已恢复。
 - 实测画面位于 `docs/screenshots/menu.jpg` 与 `docs/screenshots/result.jpg`。
 
-公网发布结果在部署完成后补充。
+## GitHub Pages 发布验收
+
+- 仓库：https://github.com/luan-0328/yellow-war 。
+- 公网地址：https://luan-0328.github.io/yellow-war/ 。
+- 首次发布提交：`3a51b5f676e80e00ac081097a4a2c57742c3b029`。
+- Actions 运行 `41221056703` 已完成，结果 **success**：https://github.com/luan-0328/yellow-war/actions/runs/41221056703 。
+- 公网首页、生产 JS/CSS 与六张 PNG 全部 HTTP 200；六张线上 PNG 与本地原始 PNG 逐字节一致。
+- 公网浏览器显示六角色正式主菜单；进入战场后，不招兵实际运行至 54 秒战败，验证 AI、基地伤害和结算链路。
+- 公网控制台警告/错误日志为空。
+- 刷新公网页面后回到正式主菜单，六个角色全部显示。
+- 线上截图：`docs/screenshots/live-menu.jpg`、`docs/screenshots/live-defeat.jpg`。
+- 生产预览 `844×390` 横屏验证：画布宽约 693.33、高 390，左边距 75，保持 16:9 且正确居中；招募、指令、暂停控件可点击，主要战场按钮高约 44.4 CSS 像素。控制台日志为空，截图见 `mobile-landscape.jpg`。
+
+开发服务保留在 `http://127.0.0.1:5173/yellow-war/`。临时生产预览服务验收后关闭。后续仅补充验收记录与截图，不改变已发布游戏源码。
 
 ## 验收边界
 
