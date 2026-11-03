@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { UNITS } from "../config/unitConfig";
+import { OrderSystem } from "../systems/OrderSystem";
 import { MOTION } from "../config/motionConfig";
 import { Unit } from "../entities/Unit";
 import { Mine } from "../entities/Mine";
@@ -10,9 +11,9 @@ import { CombatEffects } from "../ui/CombatEffects";
 import { GameButton, bindButtonKeyboard, panel, text } from "../ui/primitives";
 import { audio } from "../services/AudioService";
 
-type Mode = "march" | "mine" | "attack" | "idle";
-const MODES: Mode[] = ["march", "mine", "attack", "idle"];
-const LABELS = ["行军", "采矿", "战斗", "待机"];
+type Mode = "march" | "mine" | "attack" | "idle" | "formation";
+const MODES: Mode[] = ["march", "mine", "attack", "idle", "formation"];
+const LABELS = ["行军", "采矿", "战斗", "待机", "防守列队"];
 export class DrillScene extends Phaser.Scene {
   private clock = 0;
   private paused = false;
@@ -23,6 +24,7 @@ export class DrillScene extends Phaser.Scene {
     view: Unit;
     x: number;
     lastPhase: number;
+    label: Phaser.GameObjects.Text;
   }[] = [];
   private buttons: GameButton[] = [];
   private effects!: CombatEffects;
@@ -53,9 +55,9 @@ export class DrillScene extends Phaser.Scene {
       (mode, i) =>
         new GameButton(
           this,
-          32 + i * 184,
+          32 + i * 148,
           128,
-          172,
+          140,
           compact ? 74 : 62,
           `${LABELS[i]}  [${i + 1}]`,
           () => this.setMode(mode),
@@ -98,11 +100,13 @@ export class DrillScene extends Phaser.Scene {
         "player",
         true,
       );
-      this.actors.push({ unit: u, view, x, lastPhase: -1 });
-      text(this, x, 592, config.name, 19, "#fff1ca").setOrigin(0.5);
+      const label = text(this, x, 612, config.name, 19, "#fff1ca").setOrigin(
+        0.5,
+      );
+      this.actors.push({ unit: u, view, x, lastPhase: -1, label });
     });
     panel(this, 20, 639, 1240, 61);
-    text(this, 44, 649, "1–4 切换动作 · P 暂停观察 · Esc 返回菜单", 16);
+    text(this, 44, 649, "1–5 切换动作 · P 暂停观察 · Esc 返回菜单", 16);
     text(
       this,
       44,
@@ -117,13 +121,17 @@ export class DrillScene extends Phaser.Scene {
       if (e.key === "Escape") this.scene.start("Menu", { help: false });
       if (e.key.toLowerCase() === "p") this.togglePause();
       const i = Number(e.key) - 1;
-      if (i >= 0 && i < 4) this.setMode(MODES[i]);
+      if (i >= 0 && i < MODES.length) this.setMode(MODES[i]);
     };
     this.input.keyboard?.on("keydown", key);
     this.events.once("shutdown", () =>
       this.input.keyboard?.off("keydown", key),
     );
-    this.setMode("march");
+    this.setMode(
+      new URLSearchParams(location.search).get("view") === "formation"
+        ? "formation"
+        : "march",
+    );
   }
   private togglePause() {
     this.paused = !this.paused;
@@ -141,7 +149,7 @@ export class DrillScene extends Phaser.Scene {
   private describe() {
     this.game.canvas.setAttribute(
       "aria-label",
-      `Yellow War 伙伴演练，当前${LABELS[MODES.indexOf(this.mode)]}，${this.paused ? "已暂停" : "正在播放"}。1至4切换动作，P暂停，Esc返回。`,
+      `Yellow War 伙伴演练，当前${LABELS[MODES.indexOf(this.mode)]}，${this.paused ? "已暂停" : "正在播放"}。1至5切换动作，P暂停，Esc返回。`,
     );
   }
   update(_time: number, delta: number) {
@@ -209,6 +217,18 @@ export class DrillScene extends Phaser.Scene {
           actor.lastPhase = phase;
         }
       }
+      if (this.mode === "formation") {
+        const slot = OrderSystem.defensePosition(
+          u,
+          this.actors.map((a) => a.unit),
+        );
+        u.x = u.type === "miner" ? 210 : slot.x;
+        u.y = u.type === "miner" ? 578 : slot.y;
+        u.state = u.type === "miner" ? "mining" : "idle";
+        u.timer = 2.5 - (this.clock % 2.5);
+        u.facing = 1;
+      } else u.y = 578;
+      actor.label.setPosition(u.x, 612);
       actor.view.sync(this, u);
       if (actor.view.footfall) this.effects.step(u.x, u.y, u.type === "giant");
     }
@@ -222,6 +242,8 @@ export class DrillScene extends Phaser.Scene {
         paused: this.paused,
         actors: this.actors.map(({ unit, view }) => ({
           type: unit.type,
+          x: unit.x,
+          y: unit.y,
           phase: unit.attackElapsed,
           facing: unit.facing,
           renderer: view.sprite.type,

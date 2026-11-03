@@ -52,6 +52,20 @@ export class MenuScene extends Phaser.Scene {
     });
     text(this, 82, 326, "经营矿脉，集结伙伴，赢下这场战争。", 17, "#fff0c9");
     const compact = this.scale.displaySize.width < 1000;
+    const fullscreen = this.scale.fullscreen.available
+      ? new GameButton(
+          this,
+          1062,
+          48,
+          170,
+          compact ? 86 : 48,
+          "全屏游玩",
+          () => {
+            if (this.scale.isFullscreen) this.scale.stopFullscreen();
+            else this.scale.startFullscreen();
+          },
+        )
+      : undefined;
     const start = new GameButton(
       this,
       82,
@@ -102,7 +116,7 @@ export class MenuScene extends Phaser.Scene {
         .setDepth(1000)
         .setInteractive();
       const content = this.add.container(0, 0).setDepth(1001);
-      const p = panel(this, 350, 180, 580, 360);
+      const p = panel(this, 350, 180, 580, 400);
       const title = text(this, 392, 208, "出发之前", 30, "#f0c457");
       const body = text(
         this,
@@ -121,8 +135,10 @@ export class MenuScene extends Phaser.Scene {
         this.scene.restart({ help: false }),
       );
     } else
-      bindButtonKeyboard(this, [start, help, sound], () =>
-        this.scene.start("Battle"),
+      bindButtonKeyboard(
+        this,
+        [start, help, sound, ...(fullscreen ? [fullscreen] : [])],
+        () => this.scene.start("Battle"),
       );
     this.input.keyboard?.once("keydown-ESC", () =>
       this.scene.restart({ help: false }),

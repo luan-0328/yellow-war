@@ -11,10 +11,11 @@ export class HUD {
   private enemyHp: Phaser.GameObjects.Text;
   readonly notice: Phaser.GameObjects.Text;
   constructor(scene: Phaser.Scene) {
+    const compact = scene.scale.displaySize.width < 1000;
     panel(scene, 20, 18, 1240, 86);
     text(scene, 40, 30, "Yellow War", 24, "#f0c457");
-    this.gold = text(scene, 40, 66, "", 17, "#ffe4a1");
-    this.population = text(scene, 205, 67, "", 16);
+    this.gold = text(scene, 40, 66, "", compact ? 22 : 17, "#ffe4a1");
+    this.population = text(scene, 205, 67, "", compact ? 20 : 16);
     text(scene, 360, 31, "我方营地", 14, "#9cdae0");
     text(scene, 705, 31, "敌方营地", 14, "#f1ae98");
     this.playerHp = text(scene, 466, 32, "", 13);
@@ -26,11 +27,11 @@ export class HUD {
       850,
       145,
       "先招募矿工壮大经济，再组建前排与远程部队。",
-      16,
+      compact ? 20 : 16,
       "#ffe4a1",
     ).setOrigin(0.5);
     panel(scene, 470, 116, 790, 64).setDepth(1);
-    this.notice.setDepth(2);
+    this.notice.setDepth(2).setWordWrapWidth(740).setAlign("center");
     this.notice.setShadow(1, 2, "#24302b", 3, true, true);
   }
   update(model: BattleModel) {

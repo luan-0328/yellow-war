@@ -92,7 +92,7 @@ export class BattleScene extends Phaser.Scene {
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.input.keyboard?.addCapture(["LEFT", "RIGHT", "HOME", "END"]);
     const down = (p: Phaser.Input.Pointer) => {
-      if (p.y > 280 && p.y < 605) {
+      if (p.y > (compact ? 326 : 280) && p.y < 605) {
         this.dragging = true;
         this.lastDragX = p.x;
       }
@@ -162,11 +162,17 @@ export class BattleScene extends Phaser.Scene {
     const hidden = () => {
       if (document.hidden) this.pause();
     };
+    const portrait = () => {
+      if (window.innerWidth < 768 && window.innerHeight > window.innerWidth)
+        this.pause();
+    };
+    this.scale.on("resize", portrait);
     this.input.keyboard?.on("keydown", keyboard);
     this.game.events.on("resume-match", resume);
     document.addEventListener("visibilitychange", hidden);
     this.events.once("shutdown", () => {
       this.input.keyboard?.off("keydown", keyboard);
+      this.scale.off("resize", portrait);
       this.game.events.off("resume-match", resume);
       document.removeEventListener("visibilitychange", hidden);
       this.scene.stop("Pause");
@@ -178,10 +184,11 @@ export class BattleScene extends Phaser.Scene {
     this.model.order(command);
     const labels = {
       advance: "进攻：全军向敌方营地推进。",
-      hold: "防守：守住我方防线，迎击靠近的敌人。",
+      hold: "防守列队：巨人 → 盾矛兵 → 剑士 → 弓箭手 → 法师。",
       rally: "集合：战斗单位返回营地前方，矿工继续采矿。",
     };
     this.notify(labels[command]);
+    if (command === "hold") this.cameras.main.setScroll(0, 0);
   }
   private notify(message: string, seconds = 4) {
     this.hud.notice.setText(message);
@@ -211,7 +218,7 @@ export class BattleScene extends Phaser.Scene {
       this.pointerMoved &&
       !pointer.isDown &&
       !pointer.wasTouch &&
-      pointer.y > 280 &&
+      pointer.y > (this.scale.displaySize.width < 1000 ? 326 : 280) &&
       pointer.y < 605
     ) {
       if (pointer.x < 28) pan = -1;
@@ -366,6 +373,7 @@ export class BattleScene extends Phaser.Scene {
             type: u.type,
             team: u.team,
             hp: u.hp,
+            y: Math.round(u.y),
             x: Math.round(u.x),
             state: u.state,
           })),

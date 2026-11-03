@@ -14,6 +14,6 @@ export const BALANCE = {
   homeX: { player: 140, enemy: 3060 },
   mineX: { player: 250, enemy: 2950 },
   rallyX: { player: 330, enemy: 2870 },
-  defenseX: { player: 380, enemy: 2820 },
+  defenseX: { player: 1080, enemy: 2120 },
   groundY: 590,
 } as const;

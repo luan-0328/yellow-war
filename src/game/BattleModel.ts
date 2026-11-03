@@ -243,6 +243,11 @@ export class BattleModel {
       u.state = "attacking";
       return;
     }
+    if (this.state[u.team].command === "hold") {
+      const slot = OrderSystem.defensePosition(u, this.units);
+      u.y +=
+        Math.sign(slot.y - u.y) * Math.min(Math.abs(slot.y - u.y), dt * 28);
+    }
     const command = this.state[u.team].command,
       c = UNIT_CONFIG[u.type],
       target = CombatSystem.nearest(u, this.units),
@@ -258,8 +263,12 @@ export class BattleModel {
       return;
     }
     if (command === "hold") {
-      const line = B.defenseX[u.team];
-      this.move(u, line, dt);
+      const slot = OrderSystem.defensePosition(u, this.units);
+      this.move(u, slot.x, dt);
+      if (Math.abs(u.x - slot.x) < 3) {
+        u.state = "idle";
+        u.facing = u.team === "player" ? 1 : -1;
+      }
       return;
     }
     const enemy = opponent(u.team),
@@ -405,6 +414,7 @@ export class BattleModel {
           a.hp <= 0 ||
           b.hp <= 0 ||
           a.team !== b.team ||
+          this.state[a.team].command === "hold" ||
           a.type === "miner" ||
           b.type === "miner"
         )

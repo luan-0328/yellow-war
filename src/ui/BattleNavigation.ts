@@ -6,6 +6,9 @@ import { GameButton, panel, text } from "./primitives";
 
 /** Training and map overview stay on screen while the battlefield scrolls. */
 export class BattleNavigation {
+  private top = 194;
+  private height = 78;
+  private mapTop = 228;
   private queueText: Phaser.GameObjects.Text;
   private progress: Phaser.GameObjects.Graphics;
   private map: Phaser.GameObjects.Graphics;
@@ -14,24 +17,30 @@ export class BattleNavigation {
     scene: Phaser.Scene,
     private camera: Phaser.Cameras.Scene2D.Camera,
   ) {
-    panel(scene, 20, 194, 440, 78);
-    this.queueText = text(scene, 36, 203, "", 15);
+    const compact = scene.scale.displaySize.width < 1000;
+    const top = compact ? 224 : 194;
+    const height = compact ? 98 : 78;
+    this.top = top;
+    this.height = height;
+    this.mapTop = compact ? 267 : 228;
+    panel(scene, 20, top, 440, height);
+    this.queueText = text(scene, 36, top + 9, "", compact ? 18 : 15);
     this.progress = scene.add.graphics();
-    panel(scene, 476, 194, 784, 78);
+    panel(scene, 476, top, 784, height);
     this.buttons = [
-      new GameButton(scene, 486, 202, 80, 60, "我方", () =>
+      new GameButton(scene, 486, top + 7, 88, compact ? 86 : 60, "我方", () =>
         camera.setScroll(0, 0),
       ),
-      new GameButton(scene, 1170, 202, 80, 60, "敌方", () =>
+      new GameButton(scene, 1162, top + 7, 88, compact ? 86 : 60, "敌方", () =>
         camera.setScroll(B.worldWidth - 1280, 0),
       ),
     ];
     text(
       scene,
       580,
-      199,
+      top + 5,
       "战线全览 · 点击定位 / 拖动战场 / ← →",
-      13,
+      compact ? 17 : 13,
       "#c8c6b3",
     );
     this.map = scene.add.graphics();
@@ -44,7 +53,7 @@ export class BattleNavigation {
       );
     };
     scene.add
-      .zone(580, 228, 574, 34)
+      .zone(580, top + (compact ? 7 : 34), 574, compact ? 86 : 34)
       .setOrigin(0)
       .setInteractive({ useHandCursor: true })
       .on("pointerdown", seek);
@@ -53,8 +62,8 @@ export class BattleNavigation {
         pointer.isDown &&
         pointer.downX >= 580 &&
         pointer.downX <= 1154 &&
-        pointer.downY >= 228 &&
-        pointer.downY <= 262
+        pointer.downY >= top + (compact ? 7 : 34) &&
+        pointer.downY <= top + height - 5
       )
         seek(pointer);
     };
@@ -78,24 +87,26 @@ export class BattleNavigation {
         : ["营地待命 · 训练队列 0/5", "点击下方兵种，按顺序训练出营"],
     );
     const g = this.progress.clear();
-    g.fillStyle(0x111c1c).fillRect(36, 258, 408, 4);
+    g.fillStyle(0x111c1c).fillRect(36, this.top + this.height - 14, 408, 4);
     if (active)
       g.fillStyle(0xf0c457).fillRect(
         36,
-        258,
+        this.top + this.height - 14,
         408 * (1 - active.remaining / active.duration),
         4,
       );
     const map = this.map.clear();
-    map.fillStyle(0x111c1c).fillRoundedRect(580, 228, 574, 34, 3);
-    map.lineStyle(2, 0x7a7955).lineBetween(586, 249, 1148, 249);
+    map.fillStyle(0x111c1c).fillRoundedRect(580, this.mapTop, 574, 34, 3);
+    map
+      .lineStyle(2, 0x7a7955)
+      .lineBetween(586, this.mapTop + 21, 1148, this.mapTop + 21);
     for (const u of model.units) {
       if (u.hp <= 0) continue;
       map
         .fillStyle(u.team === "player" ? 0xf0c457 : 0xd88169)
         .fillRect(
           580 + (u.x / B.worldWidth) * 574 - 2,
-          u.type === "miner" ? 246 : 237,
+          this.mapTop + (u.type === "miner" ? 18 : 9),
           4,
           u.type === "miner" ? 6 : 12,
         );
@@ -106,13 +117,18 @@ export class BattleNavigation {
     ] as const) {
       map
         .fillStyle(color)
-        .fillRect(580 + (B.baseX[team] / B.worldWidth) * 574 - 4, 234, 8, 20);
+        .fillRect(
+          580 + (B.baseX[team] / B.worldWidth) * 574 - 4,
+          this.mapTop + 6,
+          8,
+          20,
+        );
     }
     map
       .lineStyle(1.5, 0xffedb2)
       .strokeRect(
         580 + (this.camera.scrollX / B.worldWidth) * 574,
-        229,
+        this.mapTop + 1,
         (1280 / B.worldWidth) * 574,
         32,
       );

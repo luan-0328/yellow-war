@@ -55,6 +55,10 @@ export class GameButton extends Phaser.GameObjects.Container {
     private primary = false,
   ) {
     super(scene, x, y);
+    if (scene.scale.displaySize.width < 1000) {
+      buttonHeight = Math.max(buttonHeight, 86);
+      this.buttonHeight = buttonHeight;
+    }
     scene.add.existing(this);
     this.plate = scene.add.graphics();
     this.label = text(
