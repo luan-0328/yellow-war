@@ -10,11 +10,12 @@ export class SpawnSystem {
     type: UnitType,
     team: Team,
     id: number,
+    queued = 0,
   ): UnitRuntime | string {
     if (state.status !== "playing") return "当前无法招募";
     if (state[team].baseHp <= 0) return "基地已被摧毁";
     if (
-      units.filter((u) => u.team === team && u.hp > 0).length >=
+      units.filter((u) => u.team === team && u.hp > 0).length + queued >=
       BALANCE.populationCap
     )
       return "人口已满（30 / 30）";

@@ -8,6 +8,7 @@ export interface UnitConfig {
   description: string;
   displayHeight: number;
   cost: number;
+  trainingTime: number;
   maxHp: number;
   damage: number;
   attackInterval: number;

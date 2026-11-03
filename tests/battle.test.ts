@@ -25,7 +25,8 @@ test("招募扣款一次；金币不足、暂停、基地死亡、人口满均�
   const m = new BattleModel(1);
   assert.equal(m.recruit("swordsman"), null);
   assert.equal(m.state.player.gold, 250);
-  assert.equal(m.population("player"), 2);
+  assert.equal(m.population("player"), 1);
+  assert.equal(m.reservedPopulation("player"), 2);
   assert.match(m.recruit("giant")!, /金币不足/);
   assert.equal(m.state.player.gold, 250);
   m.pause();
@@ -35,7 +36,8 @@ test("招募扣款一次；金币不足、暂停、基地死亡、人口满均�
   assert.match(m.recruit("miner")!, /基地/);
   m.state.player.baseHp = 1800;
   m.state.player.gold = 10000;
-  while (m.population("player") < 30) assert.equal(m.recruit("miner"), null);
+  while (m.reservedPopulation("player") < 30)
+    m.units.push(SpawnSystem.create("miner", "player", 100 + m.units.length));
   const gold = m.state.player.gold;
   assert.match(m.recruit("miner")!, /人口/);
   assert.equal(m.state.player.gold, gold);
@@ -125,6 +127,7 @@ test("法师和巨人对敌人溅射，不伤友军", () => {
 test("集合与防守改变战斗单位目标，矿工仍采矿", () => {
   const m = new BattleModel(1);
   m.recruit("swordsman");
+  advance(m, 4.1);
   const u = m.units.find((u) => u.type === "swordsman")!;
   u.x = 600;
   u.state = "idle";
@@ -170,7 +173,7 @@ test("真实采矿与招募策略可获胜，不注入额外金币或修改敌�
       const count = (type: UnitType) =>
         m.units.filter(
           (u) => u.team === "player" && u.hp > 0 && u.type === type,
-        ).length;
+        ).length + m.training.player.filter((e) => e.unit.type === type).length;
       let type: UnitType;
       if (count("miner") < 6) type = "miner";
       else if (count("spearman") < 2) type = "spearman";

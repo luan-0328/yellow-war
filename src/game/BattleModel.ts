@@ -14,6 +14,10 @@ export class BattleModel {
   state = MatchSystem.create();
   units: UnitRuntime[] = [];
   shots: Shot[] = [];
+  training: Record<
+    Team,
+    { unit: UnitRuntime; remaining: number; duration: number }[]
+  > = { player: [], enemy: [] };
   events: BattleEvent[] = [];
   private nextId = 1;
   private nextShot = 1;
@@ -31,18 +35,27 @@ export class BattleModel {
   population(team: Team) {
     return this.units.filter((u) => u.team === team && u.hp > 0).length;
   }
+  reservedPopulation(team: Team) {
+    return this.population(team) + this.training[team].length;
+  }
   recruit(type: UnitType, team: Team = "player") {
+    if (this.state.status !== "playing") return "当前无法招募";
+    if (this.reservedPopulation(team) >= B.populationCap)
+      return "人口已满（含训练中伙伴）";
+    if (this.training[team].length >= B.queueLimit)
+      return "训练队列已满（最多 5 名），请等待出营";
     const result = SpawnSystem.recruit(
       this.state,
       this.units,
       type,
       team,
       this.nextId,
+      this.training[team].length,
     );
     if (typeof result === "string") return result;
     this.nextId++;
-    this.units.push(result);
-    this.events.push({ kind: "recruit", team, x: result.x, y: result.y, type });
+    const duration = UNIT_CONFIG[type].trainingTime;
+    this.training[team].push({ unit: result, remaining: duration, duration });
     return null;
   }
   order(command: Command) {
@@ -65,17 +78,33 @@ export class BattleModel {
   }
   private step(dt: number) {
     this.state.elapsed += dt;
+    for (const team of ["player", "enemy"] as const) {
+      const queue = this.training[team];
+      if (!queue.length || this.state[team].baseHp <= 0) continue;
+      queue[0].remaining -= dt;
+      if (queue[0].remaining <= 0) {
+        const { unit } = queue.shift()!;
+        this.units.push(unit);
+        this.events.push({
+          kind: "recruit",
+          team,
+          x: unit.x,
+          y: unit.y,
+          type: unit.type,
+        });
+      }
+    }
     this.aiTimer += dt;
     if (this.aiTimer >= B.aiInterval) {
       this.aiTimer -= B.aiInterval;
       const choice = EnemyAISystem.choose(
-        this.units,
+        [...this.units, ...this.training.enemy.map((entry) => entry.unit)],
         this.state.enemy.gold,
         this.random,
       );
       if (choice) this.recruit(choice, "enemy");
       const pressure = this.units.filter(
-        (u) => u.team === "player" && u.hp > 0 && u.x > 850,
+        (u) => u.team === "player" && u.hp > 0 && u.x > B.defenseX.enemy - 150,
       ).length;
       this.state.enemy.command = pressure > 3 ? "hold" : "advance";
     }
@@ -134,6 +163,8 @@ export class BattleModel {
         y: 360,
       });
       this.shots = [];
+      this.training.player = [];
+      this.training.enemy = [];
     }
   }
   private move(u: UnitRuntime, x: number, dt: number) {
@@ -142,7 +173,10 @@ export class BattleModel {
     if (Math.abs(d) > 0.5) u.facing = d > 0 ? 1 : -1;
     u.x = Math.max(
       110,
-      Math.min(1170, u.x + Math.sign(d) * Math.min(Math.abs(d), step)),
+      Math.min(
+        B.worldWidth - 110,
+        u.x + Math.sign(d) * Math.min(Math.abs(d), step),
+      ),
     );
     if (u.state !== "returning" && u.state !== "retreating")
       u.state = Math.abs(d) > 3 ? "moving" : "idle";
@@ -379,8 +413,8 @@ export class BattleModel {
         if (Math.abs(d) < B.separation) {
           const push = Math.min((B.separation - Math.abs(d)) * 0.5, 20 * dt),
             sign = d === 0 ? (a.id < b.id ? 1 : -1) : Math.sign(d);
-          a.x = Math.max(110, Math.min(1170, a.x - sign * push));
-          b.x = Math.max(110, Math.min(1170, b.x + sign * push));
+          a.x = Math.max(110, Math.min(B.worldWidth - 110, a.x - sign * push));
+          b.x = Math.max(110, Math.min(B.worldWidth - 110, b.x + sign * push));
         }
       }
   }

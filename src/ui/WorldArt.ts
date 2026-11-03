@@ -1,10 +1,12 @@
 import Phaser from "phaser";
 
 /** Original scenery drawn as a single cached texture; character art is never modified. */
-export function drawWorld(scene: Phaser.Scene) {
-  if (!scene.textures.exists("world")) {
-    const texture = scene.textures.createCanvas("world", 1280, 720)!;
+export function drawWorld(scene: Phaser.Scene, width = 1280) {
+  const key = `world-${width}`;
+  if (!scene.textures.exists(key)) {
+    const texture = scene.textures.createCanvas(key, width, 720)!;
     const c = texture.getContext();
+    c.scale(width / 1280, 1);
     const sky = c.createLinearGradient(0, 0, 0, 570);
     sky.addColorStop(0, "#66888d");
     sky.addColorStop(0.54, "#b6c0aa");
@@ -170,7 +172,7 @@ export function drawWorld(scene: Phaser.Scene) {
     );
     texture.refresh();
   }
-  scene.add.image(0, 0, "world").setOrigin(0);
+  scene.add.image(0, 0, key).setOrigin(0);
 }
 
 export function drawBase(scene: Phaser.Scene, x: number, enemy = false) {

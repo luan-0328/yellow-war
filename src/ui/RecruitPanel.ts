@@ -36,20 +36,28 @@ export class RecruitPanel {
           scene,
           48,
           compact ? 49 : 29,
-          compact ? `${config.cost} 金币` : `${config.cost} 金币   [${i + 1}]`,
-          compact ? 18 : 12,
+          `${config.cost}金 · ${config.trainingTime}秒`,
+          compact ? 15 : 12,
           "#f0c457",
         ),
       ]);
-      button.on("pointerover", () => onHover(config.description));
+      button.on("pointerover", () =>
+        onHover(`${config.description}  训练 ${config.trainingTime} 秒`),
+      );
       this.buttons.push(button);
     });
     text(scene, 1051, 643, "招募伙伴", 17, "#f0c457");
-    text(scene, 1052, 674, "点击或按 1–6", 13, "#c8c6b3");
+    text(scene, 1052, 674, "1–6 加入训练", 13, "#c8c6b3");
   }
   update(model: BattleModel) {
     this.buttons.forEach((button, i) => {
-      button.setAlpha(model.state.player.gold >= UNITS[i].cost ? 1 : 0.62);
+      button.setAlpha(
+        model.state.player.gold >= UNITS[i].cost &&
+          model.training.player.length < 5 &&
+          model.reservedPopulation("player") < 30
+          ? 1
+          : 0.62,
+      );
     });
   }
 }

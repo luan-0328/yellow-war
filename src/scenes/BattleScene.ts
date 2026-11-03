@@ -10,6 +10,8 @@ import { RecruitPanel } from "../ui/RecruitPanel";
 import { CommandPanel } from "../ui/CommandPanel";
 import type { Command } from "../types/match";
 import { audio } from "../services/AudioService";
+import { BALANCE as B } from "../config/balanceConfig";
+import { BattleNavigation } from "../ui/BattleNavigation";
 import { CombatEffects } from "../ui/CombatEffects";
 
 export class BattleScene extends Phaser.Scene {
@@ -22,6 +24,11 @@ export class BattleScene extends Phaser.Scene {
   private combatEffects!: CombatEffects;
   private orderFlag!: Phaser.GameObjects.Graphics;
   private orderLabel!: Phaser.GameObjects.Text;
+  private navigation!: BattleNavigation;
+  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+  private dragging = false;
+  private lastDragX = 0;
+  private pointerMoved = false;
   private finished = false;
   private noticeTimer = 0;
   private inspectTimer = 0;
@@ -36,17 +43,21 @@ export class BattleScene extends Phaser.Scene {
     this.finished = false;
     this.noticeTimer = 8;
     this.inspectTimer = 0;
-    drawWorld(this);
-    drawBase(this, 85);
-    drawBase(this, 1195, true);
-    new Mine(this, 250);
-    new Mine(this, 1030);
+    this.cameras.main.setBounds(0, 0, B.worldWidth, 720).setScroll(0, 0);
+    this.dragging = false;
+    this.pointerMoved = false;
+    drawWorld(this, B.worldWidth);
+    drawBase(this, B.baseX.player);
+    drawBase(this, B.baseX.enemy, true);
+    new Mine(this, B.mineX.player);
+    new Mine(this, B.mineX.enemy);
     this.orderFlag = this.add.graphics().setDepth(520);
     this.orderLabel = text(this, 1115, 605, "进攻目标", 12, "#ffe2a0")
       .setOrigin(0.5)
       .setDepth(610);
     this.effects = this.add.graphics().setDepth(625);
     this.combatEffects = new CombatEffects(this);
+    const worldObjects = new Set(this.children.list);
     this.hud = new HUD(this);
     this.commands = new CommandPanel(this, (command) => this.order(command));
     this.recruits = new RecruitPanel(
@@ -54,7 +65,8 @@ export class BattleScene extends Phaser.Scene {
       (type) => {
         const error = this.model.recruit(type);
         this.notify(
-          error || `已招募${UNIT_CONFIG[type].name}，前往我方营地集合。`,
+          error ||
+            `${UNIT_CONFIG[type].name}已加入训练队列，训练 ${UNIT_CONFIG[type].trainingTime} 秒。`,
         );
       },
       (message) => this.notify(message, 3),
@@ -69,15 +81,60 @@ export class BattleScene extends Phaser.Scene {
       compact ? "暂停" : "暂停  [Esc]",
       () => this.pause(),
     );
+    this.navigation = new BattleNavigation(this, this.cameras.main);
+    // Keep HUD, buttons and their hit areas fixed; characters retain their world size.
+    for (const child of this.children.list) {
+      if (!worldObjects.has(child)) {
+        const object = child as Phaser.GameObjects.Container;
+        object.setScrollFactor(0).setDepth(2000 + object.depth);
+      }
+    }
+    this.cursors = this.input.keyboard!.createCursorKeys();
+    this.input.keyboard?.addCapture(["LEFT", "RIGHT", "HOME", "END"]);
+    const down = (p: Phaser.Input.Pointer) => {
+      if (p.y > 280 && p.y < 605) {
+        this.dragging = true;
+        this.lastDragX = p.x;
+      }
+    };
+    const move = (p: Phaser.Input.Pointer) => {
+      this.pointerMoved = true;
+      if (this.dragging && p.isDown) {
+        this.scrollBy(this.lastDragX - p.x);
+        this.lastDragX = p.x;
+      }
+    };
+    const up = () => {
+      this.dragging = false;
+    };
+    this.input.on("pointerdown", down);
+    this.input.on("pointermove", move);
+    this.input.on("pointerup", up);
+    this.input.on("pointerupoutside", up);
+    this.events.once("shutdown", () => {
+      this.input.off("pointerdown", down);
+      this.input.off("pointermove", move);
+      this.input.off("pointerup", up);
+      this.input.off("pointerupoutside", up);
+      this.input.keyboard?.removeCapture(["LEFT", "RIGHT", "HOME", "END"]);
+    });
     bindButtonKeyboard(this, [
       pause,
       ...this.commands.buttons,
       ...this.recruits.buttons,
+      ...this.navigation.buttons,
     ]);
     const keyboard = (event: KeyboardEvent) => {
       if (this.model.state.status !== "playing" || event.repeat) return;
       if (event.key === "Escape") {
         this.pause();
+        return;
+      }
+      if (event.key === "Home" || event.key === "End") {
+        this.cameras.main.setScroll(
+          event.key === "Home" ? 0 : B.worldWidth - 1280,
+          0,
+        );
         return;
       }
       const index = Number(event.key) - 1;
@@ -132,6 +189,7 @@ export class BattleScene extends Phaser.Scene {
   }
   private pause() {
     if (this.model.state.status !== "playing") return;
+    this.dragging = false;
     this.model.pause();
     this.input.enabled = false;
     if (this.input.keyboard) this.input.keyboard.enabled = false;
@@ -145,6 +203,21 @@ export class BattleScene extends Phaser.Scene {
     if (!this.model || this.finished) return;
     if (this.model.state.status === "paused") return;
     const dt = Math.min(delta / 1000, 0.1);
+    let pan =
+      (this.cursors.right.isDown ? 1 : 0) - (this.cursors.left.isDown ? 1 : 0);
+    const pointer = this.input.activePointer;
+    if (
+      !pan &&
+      this.pointerMoved &&
+      !pointer.isDown &&
+      !pointer.wasTouch &&
+      pointer.y > 280 &&
+      pointer.y < 605
+    ) {
+      if (pointer.x < 28) pan = -1;
+      else if (pointer.x > 1252) pan = 1;
+    }
+    this.scrollBy(pan * 760 * dt);
     this.model.update(dt);
     this.render(dt);
     if (
@@ -154,6 +227,13 @@ export class BattleScene extends Phaser.Scene {
       this.finished = true;
       this.scene.start("Result", { match: structuredClone(this.model.state) });
     }
+  }
+  private scrollBy(amount: number) {
+    this.cameras.main.scrollX = Phaser.Math.Clamp(
+      this.cameras.main.scrollX + amount,
+      0,
+      B.worldWidth - 1280,
+    );
   }
   private render(dt: number) {
     const ids = new Set(this.model.units.map((u) => u.id));
@@ -230,7 +310,12 @@ export class BattleScene extends Phaser.Scene {
     }
     this.combatEffects.update(dt);
     const command = this.model.state.player.command,
-      flagX = command === "advance" ? 1115 : command === "hold" ? 380 : 330;
+      flagX =
+        command === "advance"
+          ? B.baseX.enemy - 80
+          : command === "hold"
+            ? B.defenseX.player
+            : B.rallyX.player;
     this.orderFlag
       .clear()
       .lineStyle(2, 0x604a28)
@@ -246,13 +331,14 @@ export class BattleScene extends Phaser.Scene {
             ? "我方防线"
             : "集合点",
       );
+    this.navigation.update(this.model);
     this.hud.update(this.model);
     this.recruits.update(this.model);
     this.commands.update(this.model.state.player.command);
     this.noticeTimer -= dt;
     if (this.noticeTimer <= 0)
       this.hud.notice.setText(
-        "A 进攻  /  D 防守  /  R 集合  ·  1–6 招募  ·  Esc 暂停",
+        "← → / 拖动看战场 · Home 回营 · 1–6 训练 · Esc 暂停",
       );
     this.inspectTimer -= dt;
     if (this.inspectTimer <= 0) {
@@ -264,6 +350,12 @@ export class BattleScene extends Phaser.Scene {
       );
       if (import.meta.env.DEV)
         this.game.canvas.dataset.match = JSON.stringify({
+          cameraX: this.cameras.main.scrollX,
+          worldWidth: B.worldWidth,
+          training: this.model.training.player.map((e) => ({
+            type: e.unit.type,
+            remaining: e.remaining,
+          })),
           status: s.status,
           time: s.elapsed,
           player: s.player,

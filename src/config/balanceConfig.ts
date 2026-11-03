@@ -1,4 +1,6 @@
 export const BALANCE = {
+  worldWidth: 3200,
+  queueLimit: 5,
   baseHp: 1800,
   initialGold: 400,
   populationCap: 30,
@@ -8,10 +10,10 @@ export const BALANCE = {
   spawnDuration: 0.35,
   deathDuration: 0.6,
   separation: 27,
-  baseX: { player: 85, enemy: 1195 },
-  homeX: { player: 140, enemy: 1140 },
-  mineX: { player: 250, enemy: 1030 },
-  rallyX: { player: 330, enemy: 950 },
-  defenseX: { player: 380, enemy: 900 },
+  baseX: { player: 85, enemy: 3115 },
+  homeX: { player: 140, enemy: 3060 },
+  mineX: { player: 250, enemy: 2950 },
+  rallyX: { player: 330, enemy: 2870 },
+  defenseX: { player: 380, enemy: 2820 },
   groundY: 590,
 } as const;
