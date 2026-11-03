@@ -1,3 +1,4 @@
+import { centerStage, compactUI } from "../ui/responsive";
 import Phaser from "phaser";
 import { drawWorld } from "../ui/WorldArt";
 import { GameButton, bindButtonKeyboard, panel, text } from "../ui/primitives";
@@ -8,6 +9,7 @@ export class ResultScene extends Phaser.Scene {
     super("Result");
   }
   create(data: { match: MatchState }) {
+    centerStage(this);
     const match = data.match,
       won = match.status === "victory";
     drawWorld(this);
@@ -40,7 +42,7 @@ export class ResultScene extends Phaser.Scene {
       425,
       484,
       208,
-      this.scale.displaySize.width < 1000 ? 82 : 58,
+      compactUI(this) ? 82 : 58,
       "再来一局",
       () => this.scene.start("Battle"),
       true,
@@ -50,7 +52,7 @@ export class ResultScene extends Phaser.Scene {
       648,
       484,
       208,
-      this.scale.displaySize.width < 1000 ? 82 : 58,
+      compactUI(this) ? 82 : 58,
       "返回主菜单",
       () => this.scene.start("Menu", { help: false }),
     );

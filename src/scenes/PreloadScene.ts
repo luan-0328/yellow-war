@@ -1,3 +1,4 @@
+import { centerStage } from "../ui/responsive";
 import Phaser from "phaser";
 import { UNITS } from "../config/unitConfig";
 import { prepareCharacterTexture } from "../services/prepareCharacterTexture";
@@ -8,6 +9,7 @@ export class PreloadScene extends Phaser.Scene {
     super("Preload");
   }
   preload() {
+    centerStage(this);
     document.querySelector<HTMLElement>("#load-status")!.hidden = true;
     this.add
       .text(640, 310, "Yellow War", {

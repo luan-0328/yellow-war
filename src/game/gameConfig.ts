@@ -2,7 +2,7 @@ export const GAME = {
   width: 1280,
   height: 720,
   groundY: 590,
-  version: "1.3.0",
+  version: "1.4.0",
   milestone: "M6",
 } as const;
 export const COLORS = {

@@ -1,3 +1,4 @@
+import { centerStage, compactUI } from "../ui/responsive";
 import Phaser from "phaser";
 import { drawWorld } from "../ui/WorldArt";
 import { GameButton, bindButtonKeyboard, panel, text } from "../ui/primitives";
@@ -11,6 +12,7 @@ export class MenuScene extends Phaser.Scene {
     super("Menu");
   }
   create() {
+    centerStage(this);
     this.game.canvas.setAttribute(
       "aria-label",
       "Yellow War 主菜单。Enter 开始游戏，Tab 选择开始、兵种演练与音效。H 查看操作说明。",
@@ -51,7 +53,7 @@ export class MenuScene extends Phaser.Scene {
       },
     });
     text(this, 82, 326, "经营矿脉，集结伙伴，赢下这场战争。", 17, "#fff0c9");
-    const compact = this.scale.displaySize.width < 1000;
+    const compact = compactUI(this);
     const fullscreen = this.scale.fullscreen.available
       ? new GameButton(
           this,

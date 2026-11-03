@@ -16,7 +16,7 @@ export function createGame() {
     height: GAME.height,
     backgroundColor: "#252b2c",
     antialias: true,
-    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+    scale: { mode: Phaser.Scale.EXPAND, autoCenter: Phaser.Scale.CENTER_BOTH },
     scene: [
       BootScene,
       PreloadScene,

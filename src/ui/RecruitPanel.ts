@@ -1,3 +1,4 @@
+import { compactUI } from "./responsive";
 import Phaser from "phaser";
 import { UNITS } from "../config/unitConfig";
 import type { BattleModel } from "../game/BattleModel";
@@ -10,15 +11,17 @@ export class RecruitPanel {
     onRecruit: (type: UnitType) => void,
     onHover: (message: string) => void,
   ) {
-    const compact = scene.scale.displaySize.width < 1000;
-    panel(scene, 20, compact ? 608 : 632, 1240, compact ? 98 : 73);
+    const compact = compactUI(scene);
+    const width = scene.scale.gameSize.width;
+    const step = (width - 64) / 6;
+    panel(scene, 20, compact ? 608 : 632, width - 40, compact ? 106 : 73);
     UNITS.forEach((config, i) => {
-      const x = 32 + i * 166;
+      const x = 32 + i * step;
       const button = new GameButton(
         scene,
         x,
         compact ? 615 : 641,
-        158,
+        step - 8,
         compact ? 82 : 54,
         `${config.name}  ${config.cost}`,
         () => onRecruit(config.type),
@@ -46,8 +49,6 @@ export class RecruitPanel {
       );
       this.buttons.push(button);
     });
-    text(scene, 1051, 643, "招募伙伴", 17, "#f0c457");
-    text(scene, 1052, 674, "1–6 加入训练", 13, "#c8c6b3");
   }
   update(model: BattleModel) {
     this.buttons.forEach((button, i) => {

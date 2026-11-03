@@ -1,3 +1,4 @@
+import { compactUI } from "./responsive";
 import Phaser from "phaser";
 import { COLORS, FONT } from "../game/gameConfig";
 import { audio } from "../services/AudioService";
@@ -55,8 +56,11 @@ export class GameButton extends Phaser.GameObjects.Container {
     private primary = false,
   ) {
     super(scene, x, y);
-    if (scene.scale.displaySize.width < 1000) {
-      buttonHeight = Math.max(buttonHeight, 86);
+    if (compactUI(scene)) {
+      buttonHeight = Math.max(
+        buttonHeight,
+        scene.sys.settings.key === "Battle" ? 100 : 86,
+      );
       this.buttonHeight = buttonHeight;
     }
     scene.add.existing(this);
@@ -88,9 +92,11 @@ export class GameButton extends Phaser.GameObjects.Container {
       this.setY(y);
       this.activate();
     });
-    scene.input.on("pointerup", () => {
+    const release = () => {
       if (this.active) this.setY(y);
-    });
+    };
+    scene.input.on("pointerup", release);
+    this.once("destroy", () => scene.input.off("pointerup", release));
     this.draw();
   }
   activate() {

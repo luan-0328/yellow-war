@@ -1,7 +1,9 @@
 import Phaser from "phaser";
 
 /** Original scenery drawn as a single cached texture; character art is never modified. */
-export function drawWorld(scene: Phaser.Scene, width = 1280) {
+export function drawWorld(scene: Phaser.Scene, width?: number) {
+  const fixed = width === undefined;
+  width ??= 1280;
   const key = `world-${width}`;
   if (!scene.textures.exists(key)) {
     const texture = scene.textures.createCanvas(key, width, 720)!;
@@ -172,7 +174,18 @@ export function drawWorld(scene: Phaser.Scene, width = 1280) {
     );
     texture.refresh();
   }
-  scene.add.image(0, 0, key).setOrigin(0);
+  const backdrop = scene.add.image(0, 0, key).setOrigin(0);
+  if (fixed) {
+    const fit = () =>
+      backdrop.setDisplaySize(
+        scene.scale.gameSize.width,
+        scene.scale.gameSize.height,
+      );
+    backdrop.setScrollFactor(0);
+    fit();
+    scene.scale.on("resize", fit);
+    scene.events.once("shutdown", () => scene.scale.off("resize", fit));
+  }
 }
 
 export function drawBase(scene: Phaser.Scene, x: number, enemy = false) {

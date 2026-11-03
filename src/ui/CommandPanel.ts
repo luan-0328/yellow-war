@@ -1,11 +1,12 @@
+import { compactUI } from "./responsive";
 import Phaser from "phaser";
 import type { Command } from "../types/match";
 import { GameButton, panel } from "./primitives";
 export class CommandPanel {
   readonly buttons: GameButton[] = [];
   constructor(scene: Phaser.Scene, onOrder: (order: Command) => void) {
-    const compact = scene.scale.displaySize.width < 1000;
-    panel(scene, 20, 116, 435, compact ? 100 : 64);
+    const compact = compactUI(scene);
+    panel(scene, 20, 116, 435, compact ? 118 : 64);
     (["advance", "hold", "rally"] as Command[]).forEach((command, i) => {
       const labels = compact
         ? ["进攻", "防守", "集合"]

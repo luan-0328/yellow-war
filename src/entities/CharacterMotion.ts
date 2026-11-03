@@ -51,13 +51,14 @@ export function poseForUnit(
   if (moving) {
     const wave = Math.sin(walkPhase),
       amp = reduced ? 0.6 : 1;
-    pose.stride = wave * 0.065 * amp;
-    pose.liftLeft = Math.max(0, wave) * 0.027 * amp;
-    pose.liftRight = Math.max(0, -wave) * 0.027 * amp;
-    pose.leftArm = wave * 0.085;
-    pose.rightArm = -wave * 0.085;
-    pose.lean = 0.012;
-    pose.drop = -Math.abs(Math.cos(walkPhase)) * 0.006;
+    const heavy = u.type === "giant";
+    pose.stride = wave * (heavy ? 0.085 : 0.07) * amp;
+    pose.liftLeft = Math.max(0, wave) * (heavy ? 0.054 : 0.039) * amp;
+    pose.liftRight = Math.max(0, -wave) * (heavy ? 0.054 : 0.039) * amp;
+    pose.leftArm = wave * (heavy ? 0.22 : 0.11);
+    pose.rightArm = -wave * (heavy ? 0.22 : 0.11);
+    pose.lean = 0.012 + (heavy ? Math.cos(walkPhase) * 0.01 : 0);
+    pose.drop = -(1 + Math.cos(walkPhase * 2)) * (heavy ? 0.007 : 0.004);
   }
   if (u.state === "mining") {
     const t = ((2.5 - u.timer) % 0.78) / 0.78;
@@ -79,7 +80,7 @@ export function poseForUnit(
     pose.rightArm = -swing * profile.rightArm;
     pose.lean = -charge * 0.025 + strike * profile.lunge;
     pose.drop =
-      u.type === "giant" ? charge * 0.025 + strike * 0.035 : -charge * 0.007;
+      u.type === "giant" ? charge * 0.05 + strike * 0.045 : -charge * 0.007;
     if (u.type === "archer") pose.draw = charge * 0.045 - strike * 0.012;
     if (u.type === "mage") pose.breath = -charge * 0.013;
   }
@@ -120,11 +121,10 @@ export function deformGrid(
           (1 - smooth(0.11, 0.24, edge)) *
           smooth(0.38, 0.52, ny) *
           (1 - smooth(0.79, 0.87, ny));
-        const lift =
-          Math.max(0, -(left ? pose.leftArm : -pose.rightArm)) /
-          MOTION.giant.leftArm;
-        dx += (left ? -1 : 1) * lift * width * 0.012 * mask;
-        dy -= lift * height * 0.055 * mask;
+        const swing =
+          (left ? pose.leftArm : -pose.rightArm) / MOTION.giant.leftArm;
+        dx += (left ? 1 : -1) * swing * width * 0.025 * mask;
+        dy += swing * height * (swing < 0 ? 0.085 : 0.025) * mask;
         return;
       }
       const mask =

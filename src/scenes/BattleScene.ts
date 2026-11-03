@@ -1,3 +1,4 @@
+import { compactUI } from "../ui/responsive";
 import Phaser from "phaser";
 import { drawBase, drawWorld } from "../ui/WorldArt";
 import { GameButton, bindButtonKeyboard, text } from "../ui/primitives";
@@ -24,6 +25,8 @@ export class BattleScene extends Phaser.Scene {
   private combatEffects!: CombatEffects;
   private orderFlag!: Phaser.GameObjects.Graphics;
   private orderLabel!: Phaser.GameObjects.Text;
+  private interfaceObjects: Phaser.GameObjects.GameObject[] = [];
+  private interfaceButtons: GameButton[] = [];
   private navigation!: BattleNavigation;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private dragging = false;
@@ -57,42 +60,12 @@ export class BattleScene extends Phaser.Scene {
       .setDepth(610);
     this.effects = this.add.graphics().setDepth(625);
     this.combatEffects = new CombatEffects(this);
-    const worldObjects = new Set(this.children.list);
-    this.hud = new HUD(this);
-    this.commands = new CommandPanel(this, (command) => this.order(command));
-    this.recruits = new RecruitPanel(
-      this,
-      (type) => {
-        const error = this.model.recruit(type);
-        this.notify(
-          error ||
-            `${UNIT_CONFIG[type].name}已加入训练队列，训练 ${UNIT_CONFIG[type].trainingTime} 秒。`,
-        );
-      },
-      (message) => this.notify(message, 3),
-    );
-    const compact = this.scale.displaySize.width < 1000;
-    const pause = new GameButton(
-      this,
-      1095,
-      compact ? 21 : 38,
-      142,
-      compact ? 82 : 46,
-      compact ? "暂停" : "暂停  [Esc]",
-      () => this.pause(),
-    );
-    this.navigation = new BattleNavigation(this, this.cameras.main);
-    // Keep HUD, buttons and their hit areas fixed; characters retain their world size.
-    for (const child of this.children.list) {
-      if (!worldObjects.has(child)) {
-        const object = child as Phaser.GameObjects.Container;
-        object.setScrollFactor(0).setDepth(2000 + object.depth);
-      }
-    }
+    this.createInterface();
+    bindButtonKeyboard(this, this.interfaceButtons);
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.input.keyboard?.addCapture(["LEFT", "RIGHT", "HOME", "END"]);
     const down = (p: Phaser.Input.Pointer) => {
-      if (p.y > (compact ? 326 : 280) && p.y < 605) {
+      if (p.y > (compactUI(this) ? 242 : 280) && p.y < 605) {
         this.dragging = true;
         this.lastDragX = p.x;
       }
@@ -118,12 +91,6 @@ export class BattleScene extends Phaser.Scene {
       this.input.off("pointerupoutside", up);
       this.input.keyboard?.removeCapture(["LEFT", "RIGHT", "HOME", "END"]);
     });
-    bindButtonKeyboard(this, [
-      pause,
-      ...this.commands.buttons,
-      ...this.recruits.buttons,
-      ...this.navigation.buttons,
-    ]);
     const keyboard = (event: KeyboardEvent) => {
       if (this.model.state.status !== "playing" || event.repeat) return;
       if (event.key === "Escape") {
@@ -132,7 +99,9 @@ export class BattleScene extends Phaser.Scene {
       }
       if (event.key === "Home" || event.key === "End") {
         this.cameras.main.setScroll(
-          event.key === "Home" ? 0 : B.worldWidth - 1280,
+          event.key === "Home"
+            ? 0
+            : Math.max(0, B.worldWidth - this.cameras.main.width),
           0,
         );
         return;
@@ -165,6 +134,11 @@ export class BattleScene extends Phaser.Scene {
     const portrait = () => {
       if (window.innerWidth < 768 && window.innerHeight > window.innerWidth)
         this.pause();
+      else {
+        this.createInterface();
+        this.scrollBy(0);
+        this.render(0);
+      }
     };
     this.scale.on("resize", portrait);
     this.input.keyboard?.on("keydown", keyboard);
@@ -179,6 +153,53 @@ export class BattleScene extends Phaser.Scene {
     });
     this.render(0);
     audio.unlock();
+  }
+  private createInterface() {
+    this.navigation?.destroy();
+    for (const object of this.interfaceObjects) object.destroy();
+    const worldObjects = new Set(this.children.list);
+    this.hud = new HUD(this);
+    this.commands = new CommandPanel(this, (command) => this.order(command));
+    this.recruits = new RecruitPanel(
+      this,
+      (type) => {
+        const error = this.model.recruit(type);
+        this.notify(
+          error ||
+            `${UNIT_CONFIG[type].name}已加入训练队列，训练 ${UNIT_CONFIG[type].trainingTime} 秒。`,
+        );
+      },
+      (message) => this.notify(message, 3),
+    );
+    const compact = compactUI(this);
+    const pause = new GameButton(
+      this,
+      this.scale.gameSize.width - 185,
+      compact ? 21 : 38,
+      142,
+      compact ? 82 : 46,
+      compact ? "暂停" : "暂停  [Esc]",
+      () => this.pause(),
+    );
+    this.navigation = new BattleNavigation(this, this.cameras.main);
+    // Keep HUD, buttons and their hit areas fixed; characters retain their world size.
+    for (const child of this.children.list) {
+      if (!worldObjects.has(child)) {
+        const object = child as Phaser.GameObjects.Container;
+        object.setScrollFactor(0).setDepth(2000 + object.depth);
+      }
+    }
+    this.interfaceObjects = this.children.list.filter(
+      (child) => !worldObjects.has(child),
+    );
+    this.interfaceButtons.splice(
+      0,
+      this.interfaceButtons.length,
+      pause,
+      ...this.commands.buttons,
+      ...this.recruits.buttons,
+      ...this.navigation.buttons,
+    );
   }
   private order(command: Command) {
     this.model.order(command);
@@ -218,11 +239,11 @@ export class BattleScene extends Phaser.Scene {
       this.pointerMoved &&
       !pointer.isDown &&
       !pointer.wasTouch &&
-      pointer.y > (this.scale.displaySize.width < 1000 ? 326 : 280) &&
+      pointer.y > (compactUI(this) ? 242 : 280) &&
       pointer.y < 605
     ) {
       if (pointer.x < 28) pan = -1;
-      else if (pointer.x > 1252) pan = 1;
+      else if (pointer.x > this.cameras.main.width - 28) pan = 1;
     }
     this.scrollBy(pan * 760 * dt);
     this.model.update(dt);
@@ -239,7 +260,7 @@ export class BattleScene extends Phaser.Scene {
     this.cameras.main.scrollX = Phaser.Math.Clamp(
       this.cameras.main.scrollX + amount,
       0,
-      B.worldWidth - 1280,
+      Math.max(0, B.worldWidth - this.cameras.main.width),
     );
   }
   private render(dt: number) {
@@ -345,7 +366,9 @@ export class BattleScene extends Phaser.Scene {
     this.noticeTimer -= dt;
     if (this.noticeTimer <= 0)
       this.hud.notice.setText(
-        "← → / 拖动看战场 · Home 回营 · 1–6 训练 · Esc 暂停",
+        compactUI(this)
+          ? ""
+          : "← → / 拖动看战场 · Home 回营 · 1–6 训练 · Esc 暂停",
       );
     this.inspectTimer -= dt;
     if (this.inspectTimer <= 0) {

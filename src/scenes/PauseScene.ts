@@ -1,3 +1,4 @@
+import { centerStage, compactUI } from "../ui/responsive";
 import Phaser from "phaser";
 import { GameButton, bindButtonKeyboard, panel, text } from "../ui/primitives";
 import { audio } from "../services/AudioService";
@@ -6,7 +7,8 @@ export class PauseScene extends Phaser.Scene {
     super("Pause");
   }
   create() {
-    const compact = this.scale.displaySize.width < 1000;
+    centerStage(this);
+    const compact = compactUI(this);
     this.add.rectangle(640, 360, 1280, 720, 0x132327, 0.78).setInteractive();
     panel(this, 350, compact ? 80 : 143, 580, compact ? 570 : 434);
     text(this, 640, compact ? 116 : 172, "战场已暂停", 32, "#f0c457").setOrigin(

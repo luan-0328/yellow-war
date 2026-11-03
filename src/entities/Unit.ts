@@ -7,6 +7,7 @@ import {
   createCharacterGrid,
   deformGrid,
   poseForUnit,
+  restPose,
 } from "./CharacterMotion";
 // Phaser 4.2.1 implements these methods in Mesh2D.js but omits them from its .d.ts.
 interface CharacterMesh extends Phaser.GameObjects.Mesh2D {
@@ -25,6 +26,8 @@ export class Unit {
   private lastX: number;
   private renderHeight: number;
   private lastStep = 0;
+  private lastMotion = 0;
+  private currentPose = restPose();
   footfall = false;
   private reduced = window.matchMedia("(prefers-reduced-motion: reduce)")
     .matches;
@@ -69,7 +72,10 @@ export class Unit {
   }
   sync(scene: Phaser.Scene, unit: UnitRuntime) {
     const distance = unit.x - this.lastX,
-      moving = Math.abs(distance) > 0.015 && unit.hp > 0;
+      moving =
+        Math.abs(distance) > 0.001 &&
+        unit.hp > 0 &&
+        ["moving", "returning", "retreating"].includes(unit.state);
     this.walkPhase +=
       (Math.abs(distance) * Math.PI * 2) / MOTION[unit.type].stride;
     const step = Math.floor(this.walkPhase / Math.PI);
@@ -78,7 +84,15 @@ export class Unit {
     this.lastX = unit.x;
     this.x = unit.x;
     this.footY = unit.y;
-    const pose = poseForUnit(unit, this.walkPhase, moving, this.reduced);
+    const targetPose = poseForUnit(unit, this.walkPhase, moving, this.reduced);
+    const dt = Math.max(0, Math.min(0.1, unit.motionTime - this.lastMotion));
+    this.lastMotion = unit.motionTime;
+    const blend = 1 - Math.exp(-24 * dt);
+    for (const key of Object.keys(targetPose) as (keyof typeof targetPose)[]) {
+      this.currentPose[key] +=
+        (targetPose[key] - this.currentPose[key]) * blend;
+    }
+    const pose = this.currentPose;
     this.sprite.setPosition(unit.x, unit.y).setDepth(unit.y);
     this.marker.setDepth(unit.y - 0.5);
     this.setTeam(unit.team);
@@ -100,9 +114,20 @@ export class Unit {
     } else {
       this.sprite
         .setFlipX(unit.facing < 0)
-        .setY(unit.y + pose.drop * this.renderHeight);
+        .setY(unit.y + pose.drop * this.renderHeight * 0.35)
+        .setScale(
+          (this.renderHeight / this.sprite.height) * (1 + pose.drop * 0.25),
+          (this.renderHeight / this.sprite.height) *
+            (1 - pose.drop * 0.45 + pose.breath),
+        );
     }
-    this.sprite.setAngle(unit.hp <= 0 ? unit.facing * pose.death * 65 : 0);
+    this.sprite.setAngle(
+      unit.hp <= 0
+        ? unit.facing * pose.death * 65
+        : this.base
+          ? 0
+          : (pose.lean - pose.recoil) * unit.facing * 30,
+    );
     this.health ??= scene.add.graphics();
     const y = unit.y - this.renderHeight - 12;
     this.health

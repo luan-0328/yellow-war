@@ -1,3 +1,4 @@
+import { centerStage, compactUI } from "../ui/responsive";
 import Phaser from "phaser";
 import { UNITS } from "../config/unitConfig";
 import { OrderSystem } from "../systems/OrderSystem";
@@ -34,6 +35,7 @@ export class DrillScene extends Phaser.Scene {
     super("Drill");
   }
   create() {
+    centerStage(this);
     this.clock = 0;
     this.paused = false;
     this.mode = "march";
@@ -50,7 +52,7 @@ export class DrillScene extends Phaser.Scene {
       this.scene.start("Menu", { help: false }),
     );
     panel(this, 20, 119, 1240, 91);
-    const compact = this.scale.displaySize.width < 1000;
+    const compact = compactUI(this);
     this.buttons = MODES.map(
       (mode, i) =>
         new GameButton(

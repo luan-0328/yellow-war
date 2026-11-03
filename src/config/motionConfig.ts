@@ -57,12 +57,12 @@ export const MOTION: Record<UnitType, MotionProfile> = {
     lunge: 0.015,
   },
   giant: {
-    windup: 0.46,
-    recovery: 0.46,
-    stride: 68,
+    windup: 0.62,
+    recovery: 0.62,
+    stride: 60,
     weight: 1.8,
     leftArm: 0.56,
     rightArm: 0.56,
-    lunge: 0.028,
+    lunge: 0.045,
   },
 };
