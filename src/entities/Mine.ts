@@ -1,8 +1,8 @@
 import Phaser from "phaser";
 import { text } from "../ui/primitives";
 export class Mine {
-  constructor(scene: Phaser.Scene, x: number) {
-    const g = scene.add.graphics();
+  constructor(scene: Phaser.Scene, x: number, y = 590) {
+    const g = scene.add.graphics().setY(y - 590);
     g.fillStyle(0x424a3d, 0.3).fillEllipse(x, 588, 84, 15);
     g.fillStyle(0x686752)
       .fillTriangle(x - 44, 584, x - 25, 550, x + 11, 583)
@@ -13,6 +13,6 @@ export class Mine {
     g.lineStyle(2, 0xffe3a0)
       .lineBetween(x + 16, 548, x + 12, 562)
       .lineBetween(x - 18, 555, x - 20, 565);
-    text(scene, x, 604, "金矿", 12, "#fff1c8").setOrigin(0.5, 0);
+    text(scene, x, y + 14, "金矿", 12, "#fff1c8").setOrigin(0.5, 0);
   }
 }

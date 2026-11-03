@@ -42,8 +42,6 @@ export class BattleModel {
     if (this.state.status !== "playing") return "当前无法招募";
     if (this.reservedPopulation(team) >= B.populationCap)
       return "人口已满（含训练中伙伴）";
-    if (this.training[team].length >= B.queueLimit)
-      return "训练队列已满（最多 5 名），请等待出营";
     const result = SpawnSystem.recruit(
       this.state,
       this.units,
@@ -54,6 +52,16 @@ export class BattleModel {
     );
     if (typeof result === "string") return result;
     this.nextId++;
+    if (type === "miner") {
+      const miners = [
+        ...this.units,
+        ...this.training[team].map((e) => e.unit),
+      ].filter((u) => u.team === team && u.hp > 0 && u.type === "miner");
+      const counts = B.mineSites[team].map(
+        (_, i) => miners.filter((u) => (u.mineIndex ?? 0) === i).length,
+      );
+      result.mineIndex = counts.indexOf(Math.min(...counts));
+    }
     const duration = UNIT_CONFIG[type].trainingTime;
     this.training[team].push({ unit: result, remaining: duration, duration });
     return null;
@@ -181,6 +189,28 @@ export class BattleModel {
     if (u.state !== "returning" && u.state !== "retreating")
       u.state = Math.abs(d) > 3 ? "moving" : "idle";
   }
+  miningSpot(u: UnitRuntime) {
+    const index = u.mineIndex ?? 0;
+    const site = B.mineSites[u.team][index];
+    const peers = this.units
+      .filter(
+        (v) =>
+          v.team === u.team &&
+          v.type === "miner" &&
+          v.hp > 0 &&
+          (v.mineIndex ?? 0) === index,
+      )
+      .sort((a, b) => a.id - b.id);
+    const slot = Math.max(
+      0,
+      peers.findIndex((v) => v.id === u.id),
+    );
+    return {
+      x: site.x + ((slot % 3) - 1) * 12,
+      y: site.y + (Math.floor(slot / 3) % 3) * 5,
+      index,
+    };
+  }
   private miner(u: UnitRuntime, dt: number) {
     const threat = CombatSystem.nearest(
       u,
@@ -197,7 +227,11 @@ export class BattleModel {
       return;
     }
     if (u.state === "retreating") u.state = "idle";
-    const mineX = B.mineX[u.team] + ((u.id % 4) - 1.5) * 14;
+    const spot = this.miningSpot(u);
+    const mineX = spot.x;
+    const targetY = u.carrying ? B.groundY : spot.y;
+    u.y +=
+      Math.sign(targetY - u.y) * Math.min(Math.abs(targetY - u.y), dt * 22);
     if (u.carrying) {
       u.state = "returning";
       this.move(u, B.homeX[u.team], dt);

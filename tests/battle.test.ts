@@ -36,7 +36,7 @@ test("招募扣款一次；金币不足、暂停、基地死亡、人口满均�
   assert.match(m.recruit("miner")!, /基地/);
   m.state.player.baseHp = 1800;
   m.state.player.gold = 10000;
-  while (m.reservedPopulation("player") < 30)
+  while (m.reservedPopulation("player") < B.populationCap)
     m.units.push(SpawnSystem.create("miner", "player", 100 + m.units.length));
   const gold = m.state.player.gold;
   assert.match(m.recruit("miner")!, /人口/);
@@ -146,7 +146,7 @@ test("AI 在对等经济与人口约束下生产，无无限金币", () => {
     const s = m.state[team];
     assert.equal(s.gold, B.initialGold + s.earned - s.spent);
     assert.ok(s.gold >= 0);
-    assert.ok(m.population(team) <= 30);
+    assert.ok(m.reservedPopulation(team) <= B.populationCap);
   }
   assert.ok(m.state.enemy.recruited > 3);
 });

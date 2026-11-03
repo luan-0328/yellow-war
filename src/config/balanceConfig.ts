@@ -1,9 +1,8 @@
 export const BALANCE = {
   worldWidth: 3200,
-  queueLimit: 5,
   baseHp: 1800,
   initialGold: 400,
-  populationCap: 30,
+  populationCap: 40,
   mineDuration: 2.5,
   mineYield: 55,
   aiInterval: 4,
@@ -13,6 +12,18 @@ export const BALANCE = {
   baseX: { player: 85, enemy: 3115 },
   homeX: { player: 140, enemy: 3060 },
   mineX: { player: 250, enemy: 2950 },
+  mineSites: {
+    player: [
+      { x: 250, y: 590 },
+      { x: 370, y: 574 },
+      { x: 180, y: 552 },
+    ],
+    enemy: [
+      { x: 2950, y: 590 },
+      { x: 2830, y: 574 },
+      { x: 3020, y: 552 },
+    ],
+  },
   rallyX: { player: 330, enemy: 2870 },
   defenseX: { player: 1080, enemy: 2120 },
   groundY: 590,

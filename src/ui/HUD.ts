@@ -47,7 +47,7 @@ export class HUD {
     const s = model.state;
     this.gold.setText("金币  " + Math.floor(s.player.gold));
     this.population.setText(
-      `人口 ${model.population("player")}+${model.training.player.length} / 30`,
+      `人口 ${model.population("player")}+${model.training.player.length} / ${BALANCE.populationCap}`,
     );
     this.timer.setText(
       `${Math.floor(s.elapsed / 60)

@@ -37,6 +37,7 @@ export interface UnitRuntime {
   attackTimer: number;
   deathTimer: number;
   carrying: boolean;
+  mineIndex?: number;
   hitTimer: number;
   facing: 1 | -1;
   motionTime: number;

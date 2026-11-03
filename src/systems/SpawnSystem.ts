@@ -18,7 +18,7 @@ export class SpawnSystem {
       units.filter((u) => u.team === team && u.hp > 0).length + queued >=
       BALANCE.populationCap
     )
-      return "人口已满（30 / 30）";
+      return `人口已满（${BALANCE.populationCap} / ${BALANCE.populationCap}）`;
     if (!EconomySystem.spend(state[team], UNIT_CONFIG[type].cost))
       return "金币不足，需要 " + UNIT_CONFIG[type].cost + " 金币";
     state[team].recruited++;

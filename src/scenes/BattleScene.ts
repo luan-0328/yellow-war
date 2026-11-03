@@ -52,8 +52,8 @@ export class BattleScene extends Phaser.Scene {
     drawWorld(this, B.worldWidth);
     drawBase(this, B.baseX.player);
     drawBase(this, B.baseX.enemy, true);
-    new Mine(this, B.mineX.player);
-    new Mine(this, B.mineX.enemy);
+    for (const team of ["player", "enemy"] as const)
+      for (const site of B.mineSites[team]) new Mine(this, site.x, site.y);
     this.orderFlag = this.add.graphics().setDepth(520);
     this.orderLabel = text(this, 1115, 605, "进攻目标", 12, "#ffe2a0")
       .setOrigin(0.5)
@@ -397,6 +397,7 @@ export class BattleScene extends Phaser.Scene {
             team: u.team,
             hp: u.hp,
             y: Math.round(u.y),
+            mineIndex: u.mineIndex ?? 0,
             x: Math.round(u.x),
             state: u.state,
           })),
