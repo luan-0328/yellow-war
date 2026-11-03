@@ -11,7 +11,10 @@ export class MenuScene extends Phaser.Scene {
     super("Menu");
   }
   create() {
-    this.game.canvas.setAttribute('aria-label','Yellow War 主菜单。Enter 开始游戏，Tab 选择开始、操作说明与音效。');
+    this.game.canvas.setAttribute(
+      "aria-label",
+      "Yellow War 主菜单。Enter 开始游戏，Tab 选择开始、兵种演练与音效。H 查看操作说明。",
+    );
     drawWorld(this);
     const shade = this.add.graphics();
     shade.fillStyle(0x1a2c2b, 0.24).fillRect(0, 0, 1280, 720);
@@ -65,8 +68,8 @@ export class MenuScene extends Phaser.Scene {
       compact ? 468 : 463,
       292,
       compact ? 76 : 48,
-      "操作说明",
-      () => this.scene.restart({ help: true }),
+      "兵种演练",
+      () => this.scene.start("Drill"),
     );
     const sound = new GameButton(
       this,
@@ -80,14 +83,15 @@ export class MenuScene extends Phaser.Scene {
         sound.setLabel(audio.settings.muted ? "音效：关闭" : "音效：开启");
       },
     );
-    if (!compact) text(this, 83, 589, "Enter 开始  /  Tab 选择", 14, "#fff0c9");
+    if (!compact)
+      text(this, 83, 589, "Enter 开始  /  H 操作说明", 14, "#fff0c9");
     // All six official characters appear as large, unaltered illustrations.
     const xs = [484, 610, 735, 862, 994, 1140];
     const heights = [170, 185, 180, 210, 220, 325];
     UNITS.forEach((unit, i) => new Unit(this, unit, xs[i], 599, heights[i]));
     panel(this, 456, 626, 753, 41);
     text(this, 480, 634, "六位伙伴，一支军团。", 16, "#f9e8bc");
-    text(this, 939, 636, "旷野集结 · 静态立绘", 14, "#c8c6b3");
+    text(this, 939, 636, "旷野集结 · 整军出征", 14, "#c8c6b3");
     text(this, 80, 645, `v${GAME.version}  /  黄色伙伴战争`, 14, "#f9e8bc");
     if (
       this.scene.settings.data &&
@@ -122,6 +126,9 @@ export class MenuScene extends Phaser.Scene {
       );
     this.input.keyboard?.once("keydown-ESC", () =>
       this.scene.restart({ help: false }),
+    );
+    this.input.keyboard?.once("keydown-H", () =>
+      this.scene.restart({ help: true }),
     );
   }
 }

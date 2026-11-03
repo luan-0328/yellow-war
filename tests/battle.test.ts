@@ -91,6 +91,9 @@ test("箭矢命中后才扣血，目标先死亡则投射物销毁", () => {
   m.units.push(archer, target);
   m.update(0.1);
   assert.equal(target.hp, 180);
+  assert.equal(m.shots.length, 0);
+  assert.ok(archer.pendingAttack);
+  advance(m, 0.3);
   assert.equal(m.shots.length, 1);
   CombatSystem.damage(target, 1000);
   advance(m, 0.5);
@@ -113,7 +116,7 @@ test("法师和巨人对敌人溅射，不伤友军", () => {
     a.state = b.state = ally.state = "idle";
     a.attackTimer = b.attackTimer = ally.attackTimer = 100;
     m.units.push(attacker, a, b, ally);
-    advance(m, 0.5);
+    advance(m, 0.9);
     assert.ok(a.hp < 900);
     assert.ok(b.hp < 900);
     assert.equal(ally.hp, 900);

@@ -46,6 +46,10 @@ export class PreloadScene extends Phaser.Scene {
     for (const unit of UNITS) {
       prepareCharacterTexture(this, unit.type);
     }
-    this.scene.start("Menu");
+    this.scene.start(
+      new URLSearchParams(window.location.search).get("view") === "drill"
+        ? "Drill"
+        : "Menu",
+    );
   }
 }

@@ -71,6 +71,42 @@ export function prepareCharacterTexture(scene: Phaser.Scene, type: UnitType) {
     push(p - width);
     push(p + width);
   }
+  // The supplied lineup cutouts also contain disconnected slivers of neighbours.
+  // Keep the connected character (including held equipment), without editing the PNG.
+  visited.fill(0);
+  const labels = new Int32Array(width * height);
+  let component = 0,
+    largest = 0,
+    largestSize = 0;
+  for (let seed = 0; seed < width * height; seed++) {
+    if (visited[seed] || data[seed * 4 + 3] < 16) continue;
+    component++;
+    head = 0;
+    tail = 1;
+    queue[0] = seed;
+    visited[seed] = 1;
+    labels[seed] = component;
+    const visit = (p: number) => {
+      if (p < 0 || p >= width * height || visited[p] || data[p * 4 + 3] < 16)
+        return;
+      visited[p] = 1;
+      labels[p] = component;
+      queue[tail++] = p;
+    };
+    while (head < tail) {
+      const p = queue[head++];
+      if (p % width > 0) visit(p - 1);
+      if (p % width < width - 1) visit(p + 1);
+      visit(p - width);
+      visit(p + width);
+    }
+    if (tail > largestSize) {
+      largestSize = tail;
+      largest = component;
+    }
+  }
+  for (let p = 0; p < width * height; p++)
+    if (labels[p] !== largest) data[p * 4 + 3] = 0;
   c.putImageData(image, 0, 0);
   texture.refresh();
   const f = frames[type];

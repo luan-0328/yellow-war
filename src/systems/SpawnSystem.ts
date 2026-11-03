@@ -37,6 +37,9 @@ export class SpawnSystem {
       deathTimer: 0,
       carrying: false,
       hitTimer: 0,
+      facing: team === "player" ? 1 : -1,
+      motionTime: 0,
+      attackElapsed: -1,
     };
   }
 }

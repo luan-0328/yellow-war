@@ -23,7 +23,20 @@ class AudioService {
     LocalSettings.save(this.settings);
     this.unlock();
   }
-  play(kind: "click" | "attack" | "deposit" | "hit" | "victory" | "defeat") {
+  play(
+    kind:
+      | "click"
+      | "attack"
+      | "deposit"
+      | "hit"
+      | "victory"
+      | "defeat"
+      | "slash"
+      | "bow"
+      | "magic"
+      | "heavy"
+      | "mine",
+  ) {
     const c = this.context;
     if (
       !c ||
@@ -44,12 +57,29 @@ class AudioService {
       hit: 95,
       victory: 660,
       defeat: 170,
+      slash: 320,
+      bow: 560,
+      magic: 720,
+      heavy: 70,
+      mine: 1100,
     }[kind];
-    const duration = kind === "victory" || kind === "defeat" ? 0.7 : 0.09;
-    o.type = kind === "hit" ? "triangle" : "sine";
+    const duration =
+      kind === "victory" || kind === "defeat"
+        ? 0.7
+        : kind === "heavy"
+          ? 0.24
+          : kind === "magic"
+            ? 0.19
+            : 0.09;
+    o.type =
+      kind === "hit" || kind === "slash" || kind === "mine"
+        ? "triangle"
+        : "sine";
     o.frequency.setValueAtTime(frequency, now);
     o.frequency.exponentialRampToValueAtTime(
-      kind === "victory" ? 990 : frequency * 0.65,
+      kind === "victory"
+        ? 990
+        : frequency * (kind === "bow" ? 0.25 : kind === "magic" ? 1.4 : 0.65),
       now + duration,
     );
     g.gain.setValueAtTime(this.settings.volume * 0.07, now);

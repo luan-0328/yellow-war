@@ -9,6 +9,7 @@ export class CombatSystem {
       target.state = "dying";
       target.deathTimer = 0;
       target.carrying = false;
+      target.pendingAttack = undefined;
     }
     return actual;
   }

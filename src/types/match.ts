@@ -27,10 +27,19 @@ export interface Shot {
   speed: number;
 }
 export interface BattleEvent {
-  kind: "recruit" | "deposit" | "attack" | "hit" | "death" | "end";
+  kind:
+    | "recruit"
+    | "deposit"
+    | "windup"
+    | "attack"
+    | "hit"
+    | "death"
+    | "mine"
+    | "end";
   team: Team;
   x: number;
   y: number;
   type?: UnitType;
   value?: number;
+  direction?: 1 | -1;
 }

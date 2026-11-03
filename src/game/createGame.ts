@@ -6,6 +6,7 @@ import { MenuScene } from "../scenes/MenuScene";
 import { BattleScene } from "../scenes/BattleScene";
 import { PauseScene } from "../scenes/PauseScene";
 import { ResultScene } from "../scenes/ResultScene";
+import { DrillScene } from "../scenes/DrillScene";
 
 export function createGame() {
   return new Phaser.Game({
@@ -23,6 +24,7 @@ export function createGame() {
       BattleScene,
       PauseScene,
       ResultScene,
+      DrillScene,
     ],
     callbacks: {
       postBoot(game) {

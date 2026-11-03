@@ -10,14 +10,8 @@ import { RecruitPanel } from "../ui/RecruitPanel";
 import { CommandPanel } from "../ui/CommandPanel";
 import type { Command } from "../types/match";
 import { audio } from "../services/AudioService";
+import { CombatEffects } from "../ui/CombatEffects";
 
-interface Burst {
-  x: number;
-  y: number;
-  age: number;
-  color: number;
-  label?: Phaser.GameObjects.Text;
-}
 export class BattleScene extends Phaser.Scene {
   private model!: BattleModel;
   private views = new Map<number, Unit>();
@@ -25,7 +19,9 @@ export class BattleScene extends Phaser.Scene {
   private recruits!: RecruitPanel;
   private commands!: CommandPanel;
   private effects!: Phaser.GameObjects.Graphics;
-  private bursts: Burst[] = [];
+  private combatEffects!: CombatEffects;
+  private orderFlag!: Phaser.GameObjects.Graphics;
+  private orderLabel!: Phaser.GameObjects.Text;
   private finished = false;
   private noticeTimer = 0;
   private inspectTimer = 0;
@@ -37,7 +33,6 @@ export class BattleScene extends Phaser.Scene {
     if (this.input.keyboard) this.input.keyboard.enabled = true;
     this.model = new BattleModel();
     this.views = new Map();
-    this.bursts = [];
     this.finished = false;
     this.noticeTimer = 8;
     this.inspectTimer = 0;
@@ -46,7 +41,12 @@ export class BattleScene extends Phaser.Scene {
     drawBase(this, 1195, true);
     new Mine(this, 250);
     new Mine(this, 1030);
+    this.orderFlag = this.add.graphics().setDepth(520);
+    this.orderLabel = text(this, 1115, 605, "进攻目标", 12, "#ffe2a0")
+      .setOrigin(0.5)
+      .setDepth(610);
     this.effects = this.add.graphics().setDepth(625);
+    this.combatEffects = new CombatEffects(this);
     this.hud = new HUD(this);
     this.commands = new CommandPanel(this, (command) => this.order(command));
     this.recruits = new RecruitPanel(
@@ -172,6 +172,7 @@ export class BattleScene extends Phaser.Scene {
           unit.y,
           undefined,
           unit.team,
+          true,
         );
         this.views.set(unit.id, view);
         view.sprite.setInteractive({ useHandCursor: true });
@@ -182,31 +183,26 @@ export class BattleScene extends Phaser.Scene {
         );
       }
       view.sync(this, unit);
+      if (view.footfall)
+        this.combatEffects.step(unit.x, unit.y, unit.type === "giant");
     }
     for (const event of this.model.events) {
+      this.combatEffects.add(event);
       if (event.kind === "deposit" && event.team === "player") {
         audio.play("deposit");
-        const label = text(this, event.x, event.y - 110, "+55", 18, "#ffe180")
-          .setOrigin(0.5)
-          .setDepth(640);
-        this.bursts.push({
-          x: event.x,
-          y: event.y - 110,
-          age: 0,
-          color: 0xf0c457,
-          label,
-        });
       }
-      if (event.kind === "attack") audio.play("attack");
-      if (event.kind === "hit") {
-        audio.play("hit");
-        this.bursts.push({
-          x: event.x,
-          y: event.y,
-          age: 0,
-          color: event.type === "mage" ? 0x8edcff : 0xffdf83,
-        });
-      }
+      if (event.kind === "attack")
+        audio.play(
+          event.type === "giant"
+            ? "heavy"
+            : event.type === "mage"
+              ? "magic"
+              : event.type === "archer"
+                ? "bow"
+                : "slash",
+        );
+      if (event.kind === "hit") audio.play("hit");
+      if (event.kind === "mine" && event.team === "player") audio.play("mine");
     }
     this.model.events.length = 0;
     const g = this.effects.clear();
@@ -232,26 +228,24 @@ export class BattleScene extends Phaser.Scene {
         );
       }
     }
-    this.bursts = this.bursts.filter((burst) => {
-      burst.age += dt;
-      const life = burst.label ? 0.9 : 0.25;
-      if (burst.age > life) {
-        burst.label?.destroy();
-        return false;
-      }
-      if (burst.label)
-        burst.label
-          .setY(burst.y - burst.age * 35)
-          .setAlpha(1 - burst.age / life);
-      else {
-        g.lineStyle(2, burst.color, 1 - burst.age / life).strokeCircle(
-          burst.x,
-          burst.y,
-          5 + burst.age * 55,
-        );
-      }
-      return true;
-    });
+    this.combatEffects.update(dt);
+    const command = this.model.state.player.command,
+      flagX = command === "advance" ? 1115 : command === "hold" ? 380 : 330;
+    this.orderFlag
+      .clear()
+      .lineStyle(2, 0x604a28)
+      .lineBetween(flagX, 584, flagX, 540)
+      .fillStyle(0xf0c457, 0.85)
+      .fillTriangle(flagX, 540, flagX + 27, 546, flagX, 555);
+    this.orderLabel
+      .setX(flagX)
+      .setText(
+        command === "advance"
+          ? "进攻目标"
+          : command === "hold"
+            ? "我方防线"
+            : "集合点",
+      );
     this.hud.update(this.model);
     this.recruits.update(this.model);
     this.commands.update(this.model.state.player.command);

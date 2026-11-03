@@ -37,4 +37,8 @@ export interface UnitRuntime {
   deathTimer: number;
   carrying: boolean;
   hitTimer: number;
+  facing: 1 | -1;
+  motionTime: number;
+  attackElapsed: number;
+  pendingAttack?: { targetId: number | Team; remaining: number };
 }

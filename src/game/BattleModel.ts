@@ -8,6 +8,7 @@ import { SpawnSystem } from "../systems/SpawnSystem";
 import { CombatSystem } from "../systems/CombatSystem";
 import { EnemyAISystem } from "../systems/EnemyAISystem";
 import { OrderSystem } from "../systems/OrderSystem";
+import { MOTION } from "../config/motionConfig";
 const opponent = (t: Team): Team => (t === "player" ? "enemy" : "player");
 export class BattleModel {
   state = MatchSystem.create();
@@ -79,12 +80,39 @@ export class BattleModel {
       this.state.enemy.command = pressure > 3 ? "hold" : "advance";
     }
     for (const u of this.units) {
+      u.motionTime += dt;
       u.hitTimer = Math.max(0, u.hitTimer - dt);
       if (u.hp <= 0) {
         u.deathTimer += dt;
         continue;
       }
       u.attackTimer = Math.max(0, u.attackTimer - dt);
+      if (u.attackElapsed >= 0) {
+        u.attackElapsed += dt;
+        if (u.attackElapsed > MOTION[u.type].windup + MOTION[u.type].recovery)
+          u.attackElapsed = -1;
+      }
+      if (u.pendingAttack) {
+        u.pendingAttack.remaining -= dt;
+        if (u.pendingAttack.remaining <= 0) {
+          const targetId = u.pendingAttack.targetId;
+          u.pendingAttack = undefined;
+          const target =
+            typeof targetId === "string"
+              ? targetId
+              : this.units.find((v) => v.id === targetId && v.hp > 0);
+          const targetX =
+            typeof target === "string" ? B.baseX[target] : target?.x;
+          if (
+            target &&
+            targetX !== undefined &&
+            Math.abs(targetX - u.x) <=
+              UNIT_CONFIG[u.type].attackRange +
+                (typeof target === "string" ? 35 : 14)
+          )
+            this.releaseAttack(u, target);
+        }
+      }
       if (u.state === "spawning") {
         u.timer -= dt;
         if (u.timer <= 0) u.state = "idle";
@@ -111,11 +139,13 @@ export class BattleModel {
   private move(u: UnitRuntime, x: number, dt: number) {
     const d = x - u.x,
       step = UNIT_CONFIG[u.type].moveSpeed * dt;
+    if (Math.abs(d) > 0.5) u.facing = d > 0 ? 1 : -1;
     u.x = Math.max(
       110,
       Math.min(1170, u.x + Math.sign(d) * Math.min(Math.abs(d), step)),
     );
-    if (u.state !== "returning" && u.state !== "retreating") u.state = "moving";
+    if (u.state !== "returning" && u.state !== "retreating")
+      u.state = Math.abs(d) > 3 ? "moving" : "idle";
   }
   private miner(u: UnitRuntime, dt: number) {
     const threat = CombatSystem.nearest(
@@ -155,6 +185,19 @@ export class BattleModel {
         u.timer = B.mineDuration;
       }
       u.timer -= dt;
+      if (
+        B.mineDuration - u.timer >= 0.507 &&
+        Math.floor((B.mineDuration - u.timer - 0.507) / 0.78) !==
+          Math.floor((B.mineDuration - u.timer - dt - 0.507) / 0.78)
+      )
+        this.events.push({
+          kind: "mine",
+          team: u.team,
+          x: mineX,
+          y: u.y,
+          type: "miner",
+          direction: u.facing,
+        });
       if (u.timer <= 0) {
         u.carrying = true;
         u.state = "returning";
@@ -162,6 +205,10 @@ export class BattleModel {
     } else this.move(u, mineX, dt);
   }
   private fighter(u: UnitRuntime, dt: number) {
+    if (u.pendingAttack) {
+      u.state = "attacking";
+      return;
+    }
     const command = this.state[u.team].command,
       c = UNIT_CONFIG[u.type],
       target = CombatSystem.nearest(u, this.units),
@@ -194,15 +241,34 @@ export class BattleModel {
     this.move(u, target ? target.x : baseX, dt);
   }
   private attack(u: UnitRuntime, target: UnitRuntime | Team) {
-    if (u.hp <= 0) return;
+    if (u.hp <= 0 || u.pendingAttack) return;
     const c = UNIT_CONFIG[u.type];
     u.attackTimer = c.attackInterval;
+    u.attackElapsed = 0;
+    u.facing =
+      (typeof target === "string" ? B.baseX[target] : target.x) >= u.x ? 1 : -1;
+    u.pendingAttack = {
+      targetId: typeof target === "string" ? target : target.id,
+      remaining: MOTION[u.type].windup,
+    };
+    this.events.push({
+      kind: "windup",
+      team: u.team,
+      type: u.type,
+      x: u.x,
+      y: u.y,
+      direction: u.facing,
+    });
+  }
+  private releaseAttack(u: UnitRuntime, target: UnitRuntime | Team) {
+    const c = UNIT_CONFIG[u.type];
     this.events.push({
       kind: "attack",
       team: u.team,
       type: u.type,
       x: u.x,
       y: u.y,
+      direction: u.facing,
     });
     if (c.attackKind === "projectile")
       this.shots.push({

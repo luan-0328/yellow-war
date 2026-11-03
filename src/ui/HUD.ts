@@ -23,12 +23,14 @@ export class HUD {
     this.timer = text(scene, 988, 48, "", 19).setOrigin(0.5);
     this.notice = text(
       scene,
-      640,
-      127,
+      850,
+      145,
       "先招募矿工壮大经济，再组建前排与远程部队。",
-      17,
+      16,
       "#ffe4a1",
     ).setOrigin(0.5);
+    panel(scene, 470, 116, 790, 64).setDepth(1);
+    this.notice.setDepth(2);
     this.notice.setShadow(1, 2, "#24302b", 3, true, true);
   }
   update(model: BattleModel) {
